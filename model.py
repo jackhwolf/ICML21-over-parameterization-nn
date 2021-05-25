@@ -124,6 +124,7 @@ class Model(torch.nn.Module):
         criterion = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.wd)
         sparsity_epochs = []
+        loss_epochs = []
         for e in range(self.epochs):
             pred = self.forward(x)
             loss = criterion(pred, y)
@@ -137,7 +138,8 @@ class Model(torch.nn.Module):
                 print(current_sparsity)
             if e % 5000 == 0:
                 sparsity_epochs.append([e, current_sparsity])
-        return loss.detach().numpy().item(), sparsity_epochs
+                loss_epochs.append([e, loss.detach().numpy().item()])
+        return loss.detach().numpy().item(), sparsity_epochs, loss_epochs
     
     def forward(self, x):
         x = torch.FloatTensor(x)

@@ -1,27 +1,32 @@
 from experiment import Experiment
 import numpy as np
+import time
 
 class Experiment1(Experiment):
 
     def __init__(self, data, param_set):
-        super().__init__(data, param_set, results_dir="experiment_1_all")
+        super().__init__(data, param_set, results_dir="experiment_1_server")
 
     def run(self):
+        tstart = time.perf_counter()
         x, y = self.data.training_data()
         print(y[:5])
         print("==")
         testx, testy = self.data.training_data()
         model = self.model_factory()
         model.show()
-        _, sparsity_epochs = model.learn(x, y)
+        _, sparsity_epochs, loss_epochs = model.learn(x, y)
         pred = model.predict(testx)
         pred_mse = np.round(np.sum(np.power((pred - testy), 2)) / pred.size, 2)
         pred_acc = np.round((np.sign(pred) == np.sign(testy)).sum() / pred.size, 2)
+        tend = time.perf_counter()
         report = {
             "Eval. MSE": pred_mse,
             "Eval. Acc": pred_acc,
             "Sparsity": model.sparsity(),
-            "Sparsity by Epoch": sparsity_epochs
+            "Sparsity by Epoch": sparsity_epochs,
+            "Training Loss by Epoch": loss_epochs,
+            "Run Time (S)": tend - tstart
         }
         return lambda: self.save(self.data, model, report)
 
@@ -37,10 +42,10 @@ if __name__ == '__main__':
     data.save(override=False)
     data.load()
 
-    epochs = [1]
+    epochs = [50000]
     relu_widths = [data.D*data.D*data.n]
     linear_widths = [data.D*data.D]  # , data.D*data.D*data.n]
-    lambdas = [0.001]  # , 0.01, 0.1]
+    lambdas = [0.001, 0.01, 0.1]
     terms = [1, 2]
 
 
