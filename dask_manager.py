@@ -1,8 +1,6 @@
 import asyncio
 from dask.distributed import Scheduler, Worker, Client
 from contextlib import AsyncExitStack
-import yaml
-
         
 class Manager:
 
