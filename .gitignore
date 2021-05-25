@@ -1,0 +1,14 @@
+# **/*.json
+**/*.png
+**/*.pt
+
+__pycache__
+.ipynb_checkpoints
+
+matlab_models
+**/*.mat
+
+venv
+
+*.lock
+dask-worker-space
