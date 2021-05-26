@@ -50,13 +50,16 @@ if __name__ == '__main__':
 
 
     pool = []
+    mid = 0
     for rw, lw, e, lam, term in product(relu_widths, linear_widths, epochs, lambdas, terms):
         params = {"relu_width": rw, "linear_width": lw, 
         "layers": 3, "epochs": e, "learning_rate": 1e-3,
-        "regularization_lambda": lam, "regularization_method": term}
+        "regularization_lambda": lam, "regularization_method": term,
+        "modelid": mid}
         print(params)
         exp = Experiment1(data, params)
         pool.append(exp.run)
+        mid += 1
 
     savefns = manager.distributed_run(pool)
     for fn in savefns:

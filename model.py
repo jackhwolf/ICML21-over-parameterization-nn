@@ -79,7 +79,8 @@ class Model(torch.nn.Module):
 
     def __init__(self, D=2, relu_width=320, linear_width=160, layers=1, 
                         epochs=10, learning_rate=1e-3, 
-                        regularization_lambda=0.1, regularization_method=1):
+                        regularization_lambda=0.1, regularization_method=1,
+                        modelid=0):
         super().__init__()
         self.D = int(D)
         self.relu_width = int(relu_width)
@@ -94,6 +95,7 @@ class Model(torch.nn.Module):
         elif self.regularization_method == 3:
             self.wd = 1e-3
         self.blocks = torch.nn.Sequential(*self.build_blocks())
+        self.modelid = int(modelid)
 
     def describe(self):
         out = {'relu_width': self.relu_width, 'linear_width': self.linear_width}
@@ -134,7 +136,7 @@ class Model(torch.nn.Module):
             optimizer.step()
             current_sparsity = self.sparsity().tolist()
             if e % 200 == 0:
-                print(f"{e}: {loss}")
+                print(f"ID: {self.modelid}, E: {e}, LOSS: {loss}")
                 print(current_sparsity)
             if e % 5000 == 0:
                 sparsity_epochs.append([e, current_sparsity])
