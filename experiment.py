@@ -58,7 +58,7 @@ class Experiment:
         for key in params:
             t += key.title() + "\n"
             for subkey in params[key]:
-                if subkey in ["Sparsity", "Sparsity by Epoch", "state_dict"]:
+                if subkey in ["Sparsity", "Sparsity by Epoch", "state_dict", "Training Loss by Epoch", "Run Time (S)"]:
                     continue
                 if params['data']['D'] > 2 and subkey in ['N', 'n']:
                     continue

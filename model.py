@@ -133,7 +133,7 @@ class Model(torch.nn.Module):
             loss.backward()
             optimizer.step()
             current_sparsity = self.sparsity().tolist()
-            if e % 10000 == 0:
+            if e % 200 == 0:
                 print(f"{e}: {loss}")
                 print(current_sparsity)
             if e % 5000 == 0:
