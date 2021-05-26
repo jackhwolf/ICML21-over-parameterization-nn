@@ -44,7 +44,7 @@ if __name__ == '__main__':
 
     epochs = [50000]
     relu_widths = [data.D*data.D*data.n]
-    linear_widths = [data.D*data.D]  # , data.D*data.D*data.n]
+    linear_widths = [data.D*data.D*data.n]
     lambdas = [0.001, 0.01, 0.1]
     terms = [1, 2]
 
