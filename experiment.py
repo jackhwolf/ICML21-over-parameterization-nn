@@ -1,4 +1,5 @@
 import matplotlib
+from torch.serialization import save
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from model import Model
@@ -7,6 +8,7 @@ import os
 from uuid import uuid4
 import json
 from torch import save as torchsave
+from scipy.io import savemat
 
 class Experiment:
 
@@ -37,6 +39,7 @@ class Experiment:
             out['interpolation_sparsity_path'] = self.graph_Nd_learned_sparsity(data, model, out_c)
         out['sparsity_by_epoch_path'] = self.graph_sparsity_by_epoch(data, out_c)
         out['state_dict_path'] = self.save_state_dict(model)
+        out['matlab_path'] = self.save_state_dict_matlab(model)
         if not os.path.exists(self.result_path):
             open(self.result_path, 'a').close()
         curr = None
@@ -48,7 +51,6 @@ class Experiment:
                 curr = []
             out['report']['Sparsity'] = out['report']['Sparsity'].tolist()
             curr.append(out)
-        print(out)
         with open(self.result_path, 'w') as fp:
             fp.write(json.dumps(curr))
         return out
@@ -184,6 +186,21 @@ class Experiment:
         sd_path = f"{self.results_dir}/{uuid4().hex}.pt"
         torchsave(model.state_dict(), sd_path)
         return sd_path
+
+    def save_state_dict_matlab(self, model):
+        out = {}
+        sd = model.state_dict()
+        for i in range(model.layers):
+            key = 'blocks.{}.{}.weight'
+            w = sd[key.format(i, 'W')].numpy()
+            v = sd[key.format(i, 'W')].numpy()
+            s = sd[key.format(i, 'W')].numpy()
+            out[f'W_{i}'] = w
+            out[f'V_{i}'] = v
+            out[f'S_{i}'] = s
+        fname = f"{self.results_dir}/D={model.D}_Term={model.regularization_method}_Layers={model.layers}_Lam={model.regularization_lambda}.mat"
+        savemat(fname, out)
+        return fname
 
 class ResultsViewer:
 

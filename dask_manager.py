@@ -1,5 +1,5 @@
 import asyncio
-from dask.distributed import Scheduler, Worker, Client
+from dask.distributed import Scheduler, Worker, Client, Lock
 from contextlib import AsyncExitStack
         
 class Manager:
@@ -15,9 +15,10 @@ class Manager:
                     for i in range(self.workers):
                         ws.append(await stack.enter_async_context(Worker(sched.address)))
                     async with Client(sched.address, asynchronous=True) as client:
+                        lock = Lock('ICML-dask-lock-save')
                         futures = []
                         for i in range(len(fnpool)):
-                            futures.append(client.submit(fnpool[i]))
+                            futures.append(client.submit(fnpool[i], lock))
                         result = await client.gather(futures)
                         return result  # savefn for each experiment so dask doesnt write over
         return asyncio.get_event_loop().run_until_complete(f())

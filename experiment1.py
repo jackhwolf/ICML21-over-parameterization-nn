@@ -5,13 +5,11 @@ import time
 class Experiment1(Experiment):
 
     def __init__(self, data, param_set):
-        super().__init__(data, param_set, results_dir="experiment_1_server")
+        super().__init__(data, param_set, results_dir="experiment_1_server_lock")
 
-    def run(self):
+    def run(self, lock=None):
         tstart = time.perf_counter()
         x, y = self.data.training_data()
-        print(y[:5])
-        print("==")
         testx, testy = self.data.training_data()
         model = self.model_factory()
         model.show()
@@ -28,7 +26,10 @@ class Experiment1(Experiment):
             "Training Loss by Epoch": loss_epochs,
             "Run Time (S)": tend - tstart
         }
-        return lambda: self.save(self.data, model, report)
+        if lock is None:
+            return self.save(self.data, model, report)
+        with lock:
+            return self.save(self.data, model, report)
 
 if __name__ == '__main__':
     from data import Data
@@ -44,16 +45,18 @@ if __name__ == '__main__':
 
     epochs = [50000]
     relu_widths = [data.D*data.D*data.n]
-    linear_widths = [data.D*data.D*data.n]
+    linear_widths = [data.D*data.D]  # , data.D*data.D*data.n]
+    layers = [1]
     lambdas = [0.001, 0.01, 0.1]
     terms = [1, 2]
 
 
     pool = []
     mid = 0
-    for rw, lw, e, lam, term in product(relu_widths, linear_widths, epochs, lambdas, terms):
+    for rw, lw, lay, e, lam, term in product(relu_widths, linear_widths, \
+                                            layers, epochs, lambdas, terms):
         params = {"relu_width": rw, "linear_width": lw, 
-        "layers": 3, "epochs": e, "learning_rate": 1e-3,
+        "layers": 1, "epochs": e, "learning_rate": 1e-3,
         "regularization_lambda": lam, "regularization_method": term,
         "modelid": mid}
         print(params)
@@ -61,6 +64,6 @@ if __name__ == '__main__':
         pool.append(exp.run)
         mid += 1
 
-    savefns = manager.distributed_run(pool)
-    for fn in savefns:
-        print(fn())
+    results = manager.distributed_run(pool)
+    for res in results:
+        print(res)
