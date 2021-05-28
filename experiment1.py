@@ -5,7 +5,7 @@ import time
 class Experiment1(Experiment):
 
     def __init__(self, data, param_set):
-        super().__init__(data, param_set, results_dir="local_e1_test")
+        super().__init__(data, param_set, results_dir="server_e1")
 
     def run(self, lock=None):
         tstart = time.perf_counter()
@@ -42,10 +42,10 @@ if __name__ == '__main__':
 
     epochs = [50000]
     relu_widths = [data.D*data.D*data.n]
-    linear_widths = [data.D*data.D]  # *data.n]
+    linear_widths = [data.D*data.D*data.n]
     layers = [2]
-    lambdas = [0.001]  # , 0.01, 0.1]
-    terms = [2]
+    lambdas = [0.001, 0.01, 0.1]
+    terms = [1]
 
 
     pool = []
