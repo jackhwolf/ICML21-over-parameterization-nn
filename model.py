@@ -56,16 +56,12 @@ class ReLULinearSkipBlock(torch.nn.Module):
         return out2 + skip_out
 
     def regularize(self, method):
-        # method 0 is weight_decay=0 with no custom terms
-        # method 3 is weight_decay=nonzero with no custom terms
         if method in [0, 3]:
             return 0
         r = 0
         r += self.W.weight.pow(2).sum()
-        # custom term 1 from diagram
         if method == 1:
             r += self.V.weight.pow(2).sum()
-        # custom term 2 from diagram
         elif method == 2:
             for i in range(self.V.weight.shape[1]):
                 r += self.V.weight[:,i].abs().sum().pow(2)

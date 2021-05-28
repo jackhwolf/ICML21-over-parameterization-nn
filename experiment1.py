@@ -5,7 +5,7 @@ import time
 class Experiment1(Experiment):
 
     def __init__(self, data, param_set):
-        super().__init__(data, param_set, results_dir="server_e1")
+        super().__init__(data, param_set, results_dir="local_e1_test")
 
     def run(self, lock=None):
         tstart = time.perf_counter()
@@ -26,10 +26,7 @@ class Experiment1(Experiment):
             "Training Loss by Epoch": loss_epochs,
             "Run Time (S)": tend - tstart
         }
-        if lock is None:
-            return self.save(self.data, model, report)
-        with lock:
-            return self.save(self.data, model, report)
+        return lambda: self.save(self.data, model, report)
 
 if __name__ == '__main__':
     from data import Data
@@ -47,8 +44,8 @@ if __name__ == '__main__':
     relu_widths = [data.D*data.D*data.n]
     linear_widths = [data.D*data.D]  # *data.n]
     layers = [2]
-    lambdas = [0.001, 0.01, 0.1]
-    terms = [1]
+    lambdas = [0.001]  # , 0.01, 0.1]
+    terms = [2]
 
 
     pool = []
@@ -64,6 +61,7 @@ if __name__ == '__main__':
         pool.append(exp.run)
         mid += 1
 
-    results = manager.distributed_run(pool)
-    for res in results:
-        print(res)
+    savefns = manager.distributed_run(pool)
+    for fn in savefns:
+        print(fn)
+        # print(fn())
