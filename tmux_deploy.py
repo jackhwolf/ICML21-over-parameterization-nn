@@ -12,8 +12,8 @@ class Deployer:
         cmd = f"python3 {fname} {workers}"
         pane =  self.session.attached_window.attached_pane
         pane.send_keys('source venv/bin/activate')
-        # pane.send_keys('export OMP_NUM_THREADS=6')
-        pane.send_keys('export OMP_NUM_THREADS=12')
+        pane.send_keys('export OMP_NUM_THREADS=1')
+        # pane.send_keys('export OMP_NUM_THREADS=12')
         pane.send_keys(cmd)
 
 if __name__ == '__main__':

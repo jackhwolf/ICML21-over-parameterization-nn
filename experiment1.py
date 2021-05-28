@@ -5,7 +5,7 @@ import time
 class Experiment1(Experiment):
 
     def __init__(self, data, param_set):
-        super().__init__(data, param_set, results_dir="experiment_1_server_lock")
+        super().__init__(data, param_set, results_dir="server_e1")
 
     def run(self, lock=None):
         tstart = time.perf_counter()
@@ -45,10 +45,10 @@ if __name__ == '__main__':
 
     epochs = [50000]
     relu_widths = [data.D*data.D*data.n]
-    linear_widths = [data.D*data.D]  # , data.D*data.D*data.n]
-    layers = [1]
+    linear_widths = [data.D*data.D]  # *data.n]
+    layers = [2]
     lambdas = [0.001, 0.01, 0.1]
-    terms = [1, 2]
+    terms = [1]
 
 
     pool = []
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     for rw, lw, lay, e, lam, term in product(relu_widths, linear_widths, \
                                             layers, epochs, lambdas, terms):
         params = {"relu_width": rw, "linear_width": lw, 
-        "layers": 1, "epochs": e, "learning_rate": 1e-3,
+        "layers": lay, "epochs": e, "learning_rate": 1e-3,
         "regularization_lambda": lam, "regularization_method": term,
         "modelid": mid}
         print(params)
