@@ -198,7 +198,7 @@ class Experiment:
             out[f'W_{i}'] = w
             out[f'V_{i}'] = v
             out[f'S_{i}'] = s
-        fname = f"{self.results_dir}/D={model.D}_R={model.relu_width}_L={model.linear_width}_Term={model.regularization_method}_Layers={model.layers}_Lam={model.regularization_lambda}.mat"
+        fname = f"{self.results_dir}/D={model.D}_R={model.relu_width}_L={model.linear_width}_Term={model.regularization_method}_Layers={model.layers}_Lam={model.regularization_lambda}_E={model.epochs}.mat"
         savemat(fname, out)
         return fname
 
