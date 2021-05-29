@@ -63,8 +63,9 @@ class ReLULinearSkipBlock(torch.nn.Module):
         if method == 1:
             r += self.V.weight.pow(2).sum()
         elif method == 2:
-            for i in range(self.V.weight.shape[1]):
-                r += self.V.weight[:,i].abs().sum().pow(2)
+            colsums = self.V.weight.abs().sum(0).pow(2)
+            for c in colsums:
+                r += c
         return r
 
     def weights(self):

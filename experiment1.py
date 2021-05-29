@@ -7,7 +7,7 @@ class Experiment1(Experiment):
     def __init__(self, data, param_set):
         super().__init__(data, param_set, results_dir="server_e1")
 
-    def run(self, lock=None):
+    def run(self):
         tstart = time.perf_counter()
         x, y = self.data.training_data()
         testx, testy = self.data.training_data()
@@ -42,10 +42,10 @@ if __name__ == '__main__':
 
     epochs = [50000]
     relu_widths = [data.D*data.D*data.n]
-    linear_widths = [data.D*data.D*data.n]
-    layers = [2]
-    lambdas = [0.001, 0.01, 0.1]
-    terms = [1]
+    linear_widths = [data.D*data.D]  # , data.D*data.D*data.n]
+    layers = [2]  # [1, 2]
+    lambdas = [0.001]  # , 0.01, 0.1]
+    terms = [2]  # [1, 2]
 
 
     pool = []
@@ -63,5 +63,4 @@ if __name__ == '__main__':
 
     savefns = manager.distributed_run(pool)
     for fn in savefns:
-        print(fn)
-        # print(fn())
+        print(fn())
