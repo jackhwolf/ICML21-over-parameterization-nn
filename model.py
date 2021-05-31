@@ -55,19 +55,6 @@ class ReLULinearSkipBlock(torch.nn.Module):
         skip_out = self.skip_l(x)
         return out2 + skip_out
 
-    def regularize(self, method):
-        if method in [0, 3]:
-            return 0
-        r = 0
-        r += self.W.weight.pow(2).sum()
-        if method == 1:
-            r += self.V.weight.pow(2).sum()
-        elif method == 2:
-            colsums = self.V.weight.abs().sum(0).pow(2)
-            for c in colsums:
-                r += c
-        return r
-
     def weights(self):
         return [self.W.weight, self.V.weight]
 
@@ -93,6 +80,7 @@ class Model(torch.nn.Module):
             self.wd = 1e-3
         self.blocks = torch.nn.Sequential(*self.build_blocks())
         self.modelid = int(modelid)
+        self.should_regularize = self.regularization_method in [1, 2]
 
     def describe(self):
         out = {'relu_width': self.relu_width, 'linear_width': self.linear_width}
@@ -127,7 +115,8 @@ class Model(torch.nn.Module):
         for e in range(self.epochs):
             pred = self.forward(x)
             loss = criterion(pred, y)
-            loss += (self.regularization_lambda/2) * self.regularize()
+            if self.should_regularize:
+                loss += (self.regularization_lambda/2) * self.regularize()
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -151,8 +140,14 @@ class Model(torch.nn.Module):
 
     def regularize(self):
         r = 0
-        for block in self.blocks:
-            r += block.regularize(self.regularization_method)
+        for i in range(self.layers):
+            r += self.blocks[i].W.weight.pow(2).sum()
+            if self.regularization_method == 1:
+                r += self.blocks[i].V.weight.pow(2).sum()
+            elif self.regularization_method == 2:
+                terms = self.blocks[i].V.weight.abs().sum(0).pow(2)
+                for c in terms:
+                    r += c
         return r
 
     def sparsity(self):
