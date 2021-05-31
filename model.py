@@ -62,7 +62,7 @@ class Model(torch.nn.Module):
     ''' model is a sequence of ReLULinearSkipBlocks '''
 
     def __init__(self, D=2, relu_width=320, linear_width=160, layers=1, 
-                        epochs=10, learning_rate=1e-3, 
+                        epochs=10, learning_rate=1e-3, weight_decay=0,
                         regularization_lambda=0.1, regularization_method=1,
                         modelid=0):
         super().__init__()
@@ -75,9 +75,9 @@ class Model(torch.nn.Module):
         self.regularization_lambda = float(regularization_lambda)
         self.regularization_method = int(regularization_method)
         if self.regularization_method in [0, 1, 2]:
-            self.wd = 0
+            self.weight_decay = 0
         elif self.regularization_method == 3:
-            self.wd = 1e-3
+            self.weight_decay = float(weight_decay)
         self.blocks = torch.nn.Sequential(*self.build_blocks())
         self.modelid = int(modelid)
         self.should_regularize = self.regularization_method in [1, 2]
@@ -87,7 +87,7 @@ class Model(torch.nn.Module):
         out['layers'] = self.layers
         out['epochs'] = self.epochs
         out['learning_rate'] = self.learning_rate
-        out['weight_decay'] = self.wd
+        out['weight_decay'] = self.weight_decay
         out['regularization_lambda'] = self.regularization_lambda
         out['regularization_method'] = self.regularization_method
         return out
@@ -109,7 +109,7 @@ class Model(torch.nn.Module):
     def learn(self, x, y):
         x, y = torch.FloatTensor(x), torch.FloatTensor(y)
         criterion = torch.nn.MSELoss()
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.wd)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
         sparsity_epochs = []
         loss_epochs = []
         for e in range(self.epochs):
