@@ -37,7 +37,7 @@ class Experiment:
             out['interpolation_sparsity_path'] = self.graph_2d_interpolation(data, model, out_c)
         else:
             out['interpolation_sparsity_path'] = self.graph_Nd_learned_sparsity(data, model, out_c)
-        out['sparsity_by_epoch_path'] = self.graph_sparsity_by_epoch(data, out_c)
+        out['sparsity_by_epoch_path'] = self.graph_sparsity_by_epoch(data, model, out_c)
         out['state_dict_path'] = self.save_state_dict(model)
         out['matlab_path'] = self.save_state_dict_matlab(model)
         if not os.path.exists(self.result_path):
@@ -73,8 +73,6 @@ class Experiment:
                             subkey in ['regularization_lambda', 'regularization_method']:
                     continue
                 k, v = subkey, params[key][subkey]
-                if k == "weight_decay":
-                    v = "--> ".join([str(_) for _ in v])
                 t += f"-{k}: {v}\n" 
         return t
 
@@ -100,9 +98,9 @@ class Experiment:
             transform=ax[0].transAxes,
             fontsize=14
         )
-        path = f"{self.results_dir}/{uuid4().hex}.png"
-        fig.savefig(path, bbox_inches="tight", facecolor="w")
-        return path
+        fname = self.descriptive_filename(model, "-final-sparsity.png")
+        fig.savefig(fname, bbox_inches="tight", facecolor="w")
+        return fname
 
     def graph_2d_interpolation(self, data, model, out):
         n = 100
@@ -135,9 +133,9 @@ class Experiment:
             transform=ax.transAxes,
             fontsize=14
         )
-        path = f"{self.results_dir}/{uuid4().hex}.png"
-        fig.savefig(path, bbox_inches="tight", facecolor="w")
-        return path
+        fname = self.descriptive_filename(model, "-final-sparsity.png")
+        fig.savefig(fname, bbox_inches="tight", facecolor="w")
+        return fname
 
     def graph_Nd_learned_sparsity(self, data, model, out):
         fig, ax = plt.subplots(figsize=(5, 5))
@@ -154,11 +152,11 @@ class Experiment:
             transform=ax.transAxes,
             fontsize=14
         )
-        path = f"{self.results_dir}/{uuid4().hex}.png"
-        fig.savefig(path, bbox_inches="tight", facecolor="w")
-        return path
+        fname = self.descriptive_filename(model, "-final-sparsity.png")
+        fig.savefig(fname, bbox_inches="tight", facecolor="w")
+        return fname
 
-    def graph_sparsity_by_epoch(self, data, out):
+    def graph_sparsity_by_epoch(self, data, model, out):
         fig, ax = plt.subplots(figsize=(5, 5))
         ax.set_title(f"{data.D}-D Average Sparsity by Training Epoch", fontsize=14)
         ax.set_ylim(0,1)
@@ -178,9 +176,9 @@ class Experiment:
             transform=ax.transAxes,
             fontsize=14
         )
-        path = f"{self.results_dir}/{uuid4().hex}.png"
-        fig.savefig(path, bbox_inches="tight", facecolor="w")
-        return path
+        fname = self.descriptive_filename(model, "-training-sparsity.png")
+        fig.savefig(fname, bbox_inches="tight", facecolor="w")
+        return fname
 
     def save_state_dict(self, model):
         sd_path = f"{self.results_dir}/{uuid4().hex}.pt"
@@ -193,13 +191,22 @@ class Experiment:
         for i in range(model.layers):
             key = 'blocks.{}.{}.weight'
             w = sd[key.format(i, 'W')].numpy()
-            v = sd[key.format(i, 'W')].numpy()
-            s = sd[key.format(i, 'W')].numpy()
+            v = sd[key.format(i, 'V')].numpy()
+            s = sd[key.format(i, 'skip_l')].numpy()
             out[f'W_{i}'] = w
             out[f'V_{i}'] = v
             out[f'S_{i}'] = s
-        fname = f"{self.results_dir}/D={model.D}_R={model.relu_width}_L={model.linear_width}_Term={model.regularization_method}_Layers={model.layers}_Lam={model.regularization_lambda}_E={model.epochs}.mat"
+        fname = self.descriptive_filename(model, ".mat")
         savemat(fname, out)
+        return fname
+    
+    def descriptive_filename(self, model, ext):
+        fname = f"{self.results_dir}/D={model.D}"
+        fname += f"_R={model.relu_width}_L={model.linear_width}"
+        fname += f"_LR={model.learning_rate}_WD={model.weight_decay}"
+        fname += f"_Term={model.regularization_method}_Layers={model.layers}"
+        fname += f"_Lam={model.regularization_lambda}_E={model.epochs}"
+        fname += ext
         return fname
 
 class ResultsViewer:

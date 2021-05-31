@@ -5,7 +5,7 @@ import time
 class Experiment1(Experiment):
 
     def __init__(self, data, param_set):
-        super().__init__(data, param_set, results_dir="server_e1")
+        super().__init__(data, param_set, results_dir="server_e1_final_standard_weight_decay")
 
     def run(self):
         tstart = time.perf_counter()
@@ -41,23 +41,25 @@ if __name__ == '__main__':
     data.load()
 
     epochs = [50000]
-    relu_widths = [data.D*data.D*data.n]
+    relu_widths =[data.D*data.D*data.n]
     linear_widths = [data.D*data.D*data.n]
-    layers = [2]  # [1, 2]
-    lambdas = [0.001, 0.01, 0.1]
-    terms = [2]  # [1, 2]
+    layers = [2]
+    lambdas = [0]
+    terms = [3]
+    wds = [1e-3, 1e-2, 1e-1]
 
 
     pool = []
     mid = 0
-    for rw, lw, lay, e, lam, term in product(relu_widths, linear_widths, \
-                                            layers, epochs, lambdas, terms):
+    for rw, lw, lay, e, lam, term, wd in product(relu_widths, linear_widths, \
+                                            layers, epochs, lambdas, terms, wds):
         params = {"relu_width": rw, "linear_width": lw, 
         "layers": lay, "epochs": e, "learning_rate": 1e-3,
         "regularization_lambda": lam, "regularization_method": term,
-        "modelid": mid}
-        print(params)
+        "weight_decay": wd, "modelid": mid}
         exp = Experiment1(data, params)
+        print(exp.data.describe())
+        print(exp.model_factory().describe())
         pool.append(exp.run)
         mid += 1
 
