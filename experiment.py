@@ -13,7 +13,7 @@ import time
 
 class Experiment:
 
-    def __init__(self, data, param_set, results_dir="final/test"):
+    def __init__(self, data, param_set, results_dir="final/all_terms"):
         results_dir = "experiments/" + results_dir
         self.data = data
         self.model_factory = lambda: Model(data.D, **param_set)
@@ -254,7 +254,7 @@ if __name__ == '__main__':
     data.save(override=False)
     data.load()
 
-    epochs = [1]
+    epochs = [50000]
     relu_widths = [data.D*data.D*data.n]
     linear_widths = [data.D*data.D]  # *data.n]
     layers = [2] 
