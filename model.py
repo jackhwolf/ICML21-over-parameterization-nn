@@ -119,7 +119,7 @@ class Model(torch.nn.Module):
             if self.regularization_method == 1:
                 loss += (self.regularization_lambda/2) * self.term1()
             elif self.regularization_method == 2:
-                loss += (self.regularization_lambda/2) * self.term2b()
+                loss += (self.regularization_lambda/2) * self.term2()
             elif self.regularization_method == 4:
                 loss += (self.regularization_lambda/2) * self.term1b()
             optimizer.zero_grad()
@@ -149,7 +149,7 @@ class Model(torch.nn.Module):
             r += self.blocks[i].W.weight.pow(2).sum()
             r += self.blocks[i].V.weight.pow(2).sum()
         return r
-        
+
     def term2(self):
         r = 0
         for i in range(self.layers):
