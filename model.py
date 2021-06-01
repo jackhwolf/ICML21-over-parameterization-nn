@@ -2,6 +2,8 @@ import torch
 import numpy as np
 import json
 
+from torch.nn import parameter
+
 class ReLUSkipBlock(torch.nn.Module):
     ''' custom module for ReLU block with skip connection '''
 
@@ -74,13 +76,12 @@ class Model(torch.nn.Module):
         self.learning_rate = float(learning_rate)
         self.regularization_lambda = float(regularization_lambda)
         self.regularization_method = int(regularization_method)
-        if self.regularization_method in [0, 1, 2]:
+        if self.regularization_method in [0, 1, 2, 4]:
             self.weight_decay = 0
         elif self.regularization_method == 3:
             self.weight_decay = float(weight_decay)
         self.blocks = torch.nn.Sequential(*self.build_blocks())
         self.modelid = int(modelid)
-        self.should_regularize = self.regularization_method in [1, 2]
 
     def describe(self):
         out = {'relu_width': self.relu_width, 'linear_width': self.linear_width}
@@ -115,8 +116,12 @@ class Model(torch.nn.Module):
         for e in range(self.epochs):
             pred = self.forward(x)
             loss = criterion(pred, y)
-            if self.should_regularize:
-                loss += (self.regularization_lambda/2) * self.regularize()
+            if self.regularization_method == 1:
+                loss += (self.regularization_lambda/2) * self.term1()
+            elif self.regularization_method == 2:
+                loss += (self.regularization_lambda/2) * self.term2b()
+            elif self.regularization_method == 4:
+                loss += (self.regularization_lambda/2) * self.term1b()
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -138,16 +143,26 @@ class Model(torch.nn.Module):
         with torch.no_grad():
             return self.forward(x).detach().numpy()
 
-    def regularize(self):
+    def term1(self):
         r = 0
         for i in range(self.layers):
             r += self.blocks[i].W.weight.pow(2).sum()
-            if self.regularization_method == 1:
-                r += self.blocks[i].V.weight.pow(2).sum()
-            elif self.regularization_method == 2:
-                terms = self.blocks[i].V.weight.abs().sum(0).pow(2)
-                for c in terms:
-                    r += c
+            r += self.blocks[i].V.weight.pow(2).sum()
+        return r
+        
+    def term2(self):
+        r = 0
+        for i in range(self.layers):
+            r += self.blocks[i].W.weight.pow(2).sum()
+            r += self.blocks[i].V.weight.abs().sum(0).pow(2).sum()
+        return r
+
+    def term1b(self):
+        r = 0
+        for parameter in self.parameters():
+            if not parameter.requires_grad:
+                continue
+            r += parameter.pow(2).sum()
         return r
 
     def sparsity(self):
