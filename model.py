@@ -162,6 +162,15 @@ class Model(torch.nn.Module):
                 sparsity.append(sperc(weight))
         return np.array(sparsity)
 
+    def norms(self):
+        ns = []
+        for block in self.blocks:
+            ns.append([
+                block.W.weight.detach().pow(2).sum().numpy().item(),
+                block.V.weight.detach().pow(2).sum().numpy().item()
+            ])
+        return ns
+
     def show(self, p=None):
         print(f"=========={len(self.blocks)} layers==========")
         print(json.dumps(self.describe(), indent=4))
