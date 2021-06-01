@@ -78,8 +78,10 @@ class Model(torch.nn.Module):
         self.regularization_method = int(regularization_method)
         if self.regularization_method in [0, 1, 2, 4]:
             self.weight_decay = 0
+            self.regularization_lambda = float(regularization_lambda)
         elif self.regularization_method == 3:
             self.weight_decay = float(weight_decay)
+            self.regularization_lambda = 0
         self.blocks = torch.nn.Sequential(*self.build_blocks())
         self.modelid = int(modelid)
 

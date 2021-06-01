@@ -259,7 +259,7 @@ if __name__ == '__main__':
     linear_widths = [data.D*data.D]  # *data.n]
     layers = [2] 
     lambdas = [0.001,  0.01, 0.1]
-    terms = [1, 2]
+    terms = [1, 2, 3, 4]
 
 
     pool = []
@@ -269,7 +269,7 @@ if __name__ == '__main__':
         params = {"relu_width": rw, "linear_width": lw, 
         "layers": lay, "epochs": e, "learning_rate": 1e-3,
         "regularization_lambda": lam, "regularization_method": term,
-        "modelid": mid}
+        "weight_decay": lam, "modelid": mid}
         print(params)
         exp = Experiment(data, params)
         pool.append(exp.run)
