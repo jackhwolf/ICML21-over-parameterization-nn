@@ -13,7 +13,7 @@ import time
 
 class Experiment:
 
-    def __init__(self, data, param_set, results_dir="final/more_training"):
+    def __init__(self, data, param_set, results_dir="final/test"):
         results_dir = "experiments/" + results_dir
         self.data = data
         self.model_factory = lambda: Model(data.D, **param_set)
@@ -200,9 +200,9 @@ class Experiment:
         return fname
 
     def save_state_dict(self, model):
-        sd_path = f"{self.results_dir}/{uuid4().hex}.pt"
-        torchsave(model.state_dict(), sd_path)
-        return sd_path
+        fname = self.descriptive_filename(model, ".pt")
+        torchsave(model.state_dict(), fname)
+        return fname
 
     def save_state_dict_matlab(self, model):
         out = {}
@@ -254,7 +254,7 @@ if __name__ == '__main__':
     data.save(override=False)
     data.load()
 
-    epochs = [200000]
+    epochs = [1]
     relu_widths = [data.D*data.D*data.n]
     linear_widths = [data.D*data.D]  # *data.n]
     layers = [2] 
