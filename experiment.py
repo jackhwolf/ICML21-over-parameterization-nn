@@ -13,7 +13,7 @@ import time
 
 class Experiment:
 
-    def __init__(self, data, param_set, results_dir="final/all_terms_more_training"):
+    def __init__(self, data, param_set, results_dir="FIXED/w_v_architecture_low_rank"):
         results_dir = "experiments/" + results_dir
         self.data = data
         self.model_factory = lambda: Model(data.D, **param_set)
@@ -207,14 +207,14 @@ class Experiment:
     def save_state_dict_matlab(self, model):
         out = {}
         sd = model.state_dict()
-        for i in range(model.layers):
+        lookup = ['R', 'C'] if model.deepnet else ['W', 'V', 'C'] 
+        L = model.layers+2 if model.deepnet else model.layers
+        for i in range(L):
             key = 'blocks.{}.{}.weight'
-            w = sd[key.format(i, 'W')].numpy()
-            v = sd[key.format(i, 'V')].numpy()
-            s = sd[key.format(i, 'skip_l')].numpy()
-            out[f'W_{i}'] = w
-            out[f'V_{i}'] = v
-            out[f'S_{i}'] = s
+            for l in lookup:
+                if i == L-1 and l == 'C':
+                    continue
+                out[f'{l}_{i}'] = sd[key.format(i, l)].numpy()
         fname = self.descriptive_filename(model, ".mat")
         savemat(fname, out)
         return fname
@@ -225,6 +225,7 @@ class Experiment:
         fname += f"_LR={model.learning_rate}_WD={model.weight_decay}"
         fname += f"_Term={model.regularization_method}_Layers={model.layers}"
         fname += f"_Lam={model.regularization_lambda}_E={model.epochs}"
+        fname += f"__BlockArch={model.deepnet}"
         fname += ext
         return fname
 
@@ -254,13 +255,13 @@ if __name__ == '__main__':
     data.save(override=False)
     data.load()
 
-    epochs = [200000]
+    epochs = [50000]
     relu_widths = [data.D*data.D*data.n]
     linear_widths = [data.D*data.D]  # *data.n]
     layers = [2] 
-    lambdas = [0.001,  0.01, 0.1]
-    terms = [1, 2, 3, 4]
-
+    lambdas = [0.001, 0.1]
+    terms = ['standard_wd', 'term2']
+    deep = False
 
     pool = []
     mid = 0
@@ -269,11 +270,19 @@ if __name__ == '__main__':
         params = {"relu_width": rw, "linear_width": lw, 
         "layers": lay, "epochs": e, "learning_rate": 1e-3,
         "regularization_lambda": lam, "regularization_method": term,
-        "weight_decay": lam, "modelid": mid}
+        "weight_decay": lam, "modelid": mid, "deepnet": deep}
         print(params)
         exp = Experiment(data, params)
         pool.append(exp.run)
         mid += 1
+
+    params_no_reg = {
+        "relu_width": rw, "linear_width": lw, 
+        "layers": lay, "epochs": e, "learning_rate": 1e-3,
+        "regularization_lambda": lam, "regularization_method": 'none',
+        "modelid": mid, "deepnet": deep
+    }
+    pool.append(Experiment(data, params_no_reg).run)
 
     savefns = manager.distributed_run(pool)
     for fn in savefns:

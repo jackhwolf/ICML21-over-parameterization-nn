@@ -2,38 +2,6 @@ import torch
 import numpy as np
 import json
 
-from torch.nn import parameter
-
-class ReLUSkipBlock(torch.nn.Module):
-    ''' custom module for ReLU block with skip connection '''
-
-    def __init__(self, r_width_in, r_width_out):
-        '''
-        r_width_in:  int, dimensions of input
-        r_width_out: int, dimensions of input
-        '''
-        super().__init__()
-        self.relu_width_in = int(r_width_in)
-        self.relu_width_out = int(r_width_out)            
-        self.l1 = torch.nn.Linear(self.relu_width_in, self.relu_width_out)
-        self.skip_l = torch.nn.Linear(self.relu_width_in, self.relu_width_out)
-        if self.relu_width_out == 1:
-            self.l2 = torch.nn.Linear(1, 1)
-
-    def forward(self, x):
-        out1 = self.l1(x).clamp(min=0)
-        skip_out = self.skip_l(x)
-        out = out1 + skip_out
-        if self.relu_width_out == 1:
-            out = self.l2(out)
-        return out
-
-    def weights(self):
-        ws = [self.l1.weight]
-        if self.relu_width_out == 1:
-            ws.append(self.l2.weight)
-        return ws
-
 class ReLULinearSkipBlock(torch.nn.Module):
     ''' custom module for ReLU-->Linear block/layer with skip '''
 
@@ -49,16 +17,38 @@ class ReLULinearSkipBlock(torch.nn.Module):
         self.linear_width = int(l_width)
         self.W = torch.nn.Linear(self.D, self.relu_width)
         self.V = torch.nn.Linear(self.relu_width, self.linear_width)
-        self.skip_l = torch.nn.Linear(self.D, self.linear_width)
+        self.C = torch.nn.Linear(self.D, self.linear_width)
 
     def forward(self, x):
         out1 = self.W(x).clamp(min=0)
         out2 = self.V(out1)
-        skip_out = self.skip_l(x)
+        skip_out = self.C(x)
         return out2 + skip_out
 
     def weights(self):
         return [self.W.weight, self.V.weight]
+
+class DeepBlock(torch.nn.Module):
+
+    def __init__(self, relu_in, relu_out):
+        super().__init__()
+        self.relu_in = int(relu_in)
+        self.relu_out = int(relu_out)
+        self.R = torch.nn.Linear(self.relu_in, self.relu_out)
+        if self.relu_out == 1:
+            self.C = None
+        else:
+            self.C = torch.nn.Linear(self.relu_in, self.relu_out)
+
+    def forward(self, x):
+        if self.relu_out == 1:
+            out = self.R(x)
+        else:
+            out = self.R(x).clamp(min=0) + self.C(x)
+        return out
+
+    def weights(self):
+        return [self.R.weight]
 
 class Model(torch.nn.Module):
     ''' model is a sequence of ReLULinearSkipBlocks '''
@@ -66,7 +56,7 @@ class Model(torch.nn.Module):
     def __init__(self, D=2, relu_width=320, linear_width=160, layers=1, 
                         epochs=10, learning_rate=1e-3, weight_decay=0,
                         regularization_lambda=0.1, regularization_method=1,
-                        modelid=0):
+                        deepnet=False, modelid=0):
         super().__init__()
         self.D = int(D)
         self.relu_width = int(relu_width)
@@ -75,15 +65,19 @@ class Model(torch.nn.Module):
         self.epochs = int(epochs)
         self.learning_rate = float(learning_rate)
         self.regularization_lambda = float(regularization_lambda)
-        self.regularization_method = int(regularization_method)
-        if self.regularization_method in [0, 1, 2, 4]:
+        self.regularization_method = regularization_method
+        self.deepnet = bool(deepnet)
+        if not self.deepnet and self.regularization_method in ['term2']:
             self.weight_decay = 0
             self.regularization_lambda = float(regularization_lambda)
-        elif self.regularization_method == 3:
+        elif self.regularization_method in ['standard_wd']:
             self.weight_decay = float(weight_decay)
             self.regularization_lambda = 0
-        self.blocks = torch.nn.Sequential(*self.build_blocks())
+        elif self.regularization_method in ['none']:
+            self.weight_decay = 0
+            self.regularization_lambda = 0
         self.modelid = int(modelid)
+        self.blocks = torch.nn.Sequential(*self.build_blocks())
 
     def describe(self):
         out = {'relu_width': self.relu_width, 'linear_width': self.linear_width}
@@ -93,20 +87,22 @@ class Model(torch.nn.Module):
         out['weight_decay'] = self.weight_decay
         out['regularization_lambda'] = self.regularization_lambda
         out['regularization_method'] = self.regularization_method
+        out['block_architecture'] = self.deepnet
         return out
 
     def build_blocks(self):
         blocks = []
-        for bi in range(self.layers):
-            if self.linear_width != 0:
+        if self.deepnet:
+            blocks.append(DeepBlock(self.D, self.relu_width))
+            for l in range(self.layers):
+                blocks.append(DeepBlock(self.relu_width, self.relu_width))
+            blocks.append(DeepBlock(self.relu_width, 1))
+        else:            
+            for bi in range(self.layers):
                 D = self.D if bi == 0 else self.linear_width            
                 out = 1 if bi == self.layers-1 else self.linear_width   
                 block = ReLULinearSkipBlock(D, self.relu_width, out)
-            else:
-                D = self.D if bi == 0 else self.relu_width            
-                out = 1 if bi == self.layers-1 else self.relu_width   
-                block = ReLUSkipBlock(D, out)
-            blocks.append(block)
+                blocks.append(block)
         return blocks
 
     def learn(self, x, y):
@@ -118,12 +114,8 @@ class Model(torch.nn.Module):
         for e in range(self.epochs):
             pred = self.forward(x)
             loss = criterion(pred, y)
-            if self.regularization_method == 1:
-                loss += (self.regularization_lambda/2) * self.term1()
-            elif self.regularization_method == 2:
-                loss += (self.regularization_lambda/2) * self.term2()
-            elif self.regularization_method == 4:
-                loss += (self.regularization_lambda/2) * self.term1b()
+            if not self.deepnet and self.regularization_method == 'term2':
+                loss += self.regularization_lambda * self.regularize_term2()
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -145,26 +137,13 @@ class Model(torch.nn.Module):
         with torch.no_grad():
             return self.forward(x).detach().numpy()
 
-    def term1(self):
+    def regularize_term2(self):
         r = 0
         for i in range(self.layers):
-            r += self.blocks[i].W.weight.pow(2).sum()
-            r += self.blocks[i].V.weight.pow(2).sum()
-        return r
-
-    def term2(self):
-        r = 0
-        for i in range(self.layers):
-            r += self.blocks[i].W.weight.pow(2).sum()
-            r += self.blocks[i].V.weight.abs().sum(0).pow(2).sum()
-        return r
-
-    def term1b(self):
-        r = 0
-        for parameter in self.parameters():
-            if not parameter.requires_grad:
-                continue
-            r += parameter.pow(2).sum()
+            r += self.blocks[i].W.weight.pow(2).sum()/2
+            r += self.blocks[i].V.weight.abs().sum(0).pow(2).sum()/2
+            r += self.blocks[i].C.weight.abs().sum()
+            r += self.blocks[i].C.bias.abs().sum()
         return r
 
     def sparsity(self):
