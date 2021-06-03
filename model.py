@@ -54,7 +54,7 @@ class Model(torch.nn.Module):
     ''' model is a sequence of ReLULinearSkipBlocks '''
 
     def __init__(self, D=2, relu_width=320, linear_width=160, layers=1, 
-                        epochs=10, learning_rate=1e-3, weight_decay=0,
+                        epochs=10, learning_rate=1e-3,
                         regularization_lambda=0.1, regularization_method=1,
                         block_architecture=False, modelid=0):
         super().__init__()
@@ -71,7 +71,7 @@ class Model(torch.nn.Module):
             self.weight_decay = 0
             self.regularization_lambda = float(regularization_lambda)
         elif self.regularization_method in ['standard_wd']:
-            self.weight_decay = float(weight_decay)
+            self.weight_decay = float(regularization_lambda)
             self.regularization_lambda = 0
         elif self.regularization_method in ['none']:
             self.weight_decay = 0

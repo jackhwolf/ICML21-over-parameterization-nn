@@ -8,7 +8,6 @@ parameters:
   layers: 2
   epochs: 50000
   learning_rate: 1e-3
-  weight_decay: 0
   regularization_lambda: [1e-1, 1e-3, 1e-5, 1e-7]
   regularization_method: [standard_wd, term2, none]
   block_architecture: False
