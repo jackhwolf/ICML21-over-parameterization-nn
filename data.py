@@ -1,3 +1,4 @@
+from genericpath import exists
 import numpy as np
 import os
 from itertools import product
@@ -5,7 +6,7 @@ from itertools import product
 class Data:
     ''' generate a random sample of (feature,label) pairs '''
 
-    def __init__(self, D=2, N=1000, n=32, preloaded=False):
+    def __init__(self, D=2, N=1000, n=32, data_id=-1):
         '''
         D: int, feature dimensions
         N: int, total # points  (D<=2)
@@ -19,28 +20,29 @@ class Data:
         self.mask = np.array([False]*self.N)
         self.mask[:self.n] = True
         np.random.shuffle(self.mask)
-        if preloaded:
-            self.load()
+        self.data_dir = f"datasets/{self._fname()}"
+        os.makedirs(self.data_dir, exist_ok=True)
+        self.data_id = len(os.listdir(self.data_dir)) // 3
+        self.load(data_id)
 
-    def save(self, override=False):
-        os.makedirs("datasets", exist_ok=True)
+    def save(self):
         fname = self._fname()
         data = [self.X, self.Y, self.mask]
-        exts = ["X.npy", "Y.npy", "mask.npy"]
-        if os.path.exists(f"datasets/{fname}_{exts[0]}") and not override:
-            return False
+        exts = ["X", "Y", "mask"]
         for i in range(len(data)):
-            path = f"datasets/{fname}_{exts[i]}"
+            path = f"{self.data_dir}/{fname}_{exts[i]}.{self.data_id}"
             np.save(path, data[i])
         return True
 
-    def load(self):
+    def load(self, data_id=0):
         fname = self._fname()
-        if not os.path.exists(f"datasets/{fname}_X.npy"):
+        if not os.path.exists(f"{self.data_dir}/{fname}_X.{data_id}.npy"):
+            self.data_id=-1
             return False
-        self.X = np.load(f"datasets/{fname}_X.npy")
-        self.Y = np.load(f"datasets/{fname}_Y.npy")
-        self.mask = np.load(f"datasets/{fname}_mask.npy")
+        self.X = np.load(f"{self.data_dir}/{fname}_X.{data_id}.npy")
+        self.Y = np.load(f"{self.data_dir}/{fname}_Y.{data_id}.npy")
+        self.mask = np.load(f"{self.data_dir}/{fname}_mask.{data_id}.npy")
+        self.data_id = data_id
         return True
 
     def _fname(self):
@@ -70,7 +72,7 @@ class Data:
         return y.reshape(-1,1)
 
     def describe(self):
-        return {"D": self.D, "N": self.N, "n": self.n}
+        return {"D": self.D, "N": self.N, "n": self.n, "data_id": self.data_id}
 
     def training_data(self):
         if self.D <= 2:

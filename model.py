@@ -56,7 +56,7 @@ class Model(torch.nn.Module):
     def __init__(self, D=2, relu_width=320, linear_width=160, layers=1, 
                         epochs=10, learning_rate=1e-3, weight_decay=0,
                         regularization_lambda=0.1, regularization_method=1,
-                        deepnet=False, modelid=0):
+                        block_architecture=False, modelid=0):
         super().__init__()
         self.D = int(D)
         self.relu_width = int(relu_width)
@@ -66,8 +66,8 @@ class Model(torch.nn.Module):
         self.learning_rate = float(learning_rate)
         self.regularization_lambda = float(regularization_lambda)
         self.regularization_method = regularization_method
-        self.deepnet = bool(deepnet)
-        if not self.deepnet and self.regularization_method in ['term2']:
+        self.block_architecture = bool(block_architecture)
+        if not self.block_architecture and self.regularization_method in ['term2']:
             self.weight_decay = 0
             self.regularization_lambda = float(regularization_lambda)
         elif self.regularization_method in ['standard_wd']:
@@ -87,12 +87,12 @@ class Model(torch.nn.Module):
         out['weight_decay'] = self.weight_decay
         out['regularization_lambda'] = self.regularization_lambda
         out['regularization_method'] = self.regularization_method
-        out['block_architecture'] = self.deepnet
+        out['block_architecture'] = self.block_architecture
         return out
 
     def build_blocks(self):
         blocks = []
-        if self.deepnet:
+        if self.block_architecture:
             blocks.append(DeepBlock(self.D, self.relu_width))
             for l in range(self.layers):
                 blocks.append(DeepBlock(self.relu_width, self.relu_width))
@@ -114,7 +114,7 @@ class Model(torch.nn.Module):
         for e in range(self.epochs):
             pred = self.forward(x)
             loss = criterion(pred, y)
-            if not self.deepnet and self.regularization_method == 'term2':
+            if not self.block_architecture and self.regularization_method == 'term2':
                 loss += self.regularization_lambda * self.regularize_term2()
             optimizer.zero_grad()
             loss.backward()

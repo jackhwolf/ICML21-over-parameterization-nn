@@ -60,9 +60,16 @@ class YamlInput:
 
     def iterate_inputs(self):
         grid = list(ParameterGrid(self.c['parameters']))
-        data_id = self.c['data_id']
-        for data_id, g in product(data_id, grid):
-            yield data_id, g      
+        data_ids = self.c['data_id']
+        for data_id in data_ids:
+            no_reg_done = False
+            for g in grid:
+                if g['regularization_method'] == 'none' and no_reg_done:
+                    continue
+                yield data_id, g
+                if g['regularization_method'] == 'none':
+                    no_reg_done = True
+
 
     def __getitem__(self, k):
         return self.c[k]    

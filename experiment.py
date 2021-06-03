@@ -1,62 +1,43 @@
 import matplotlib
-from torch.serialization import save
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from model import Model
 import numpy as np
 import os
-from uuid import uuid4
 import json
 from torch import save as torchsave
 from scipy.io import savemat
-import time
+from data import Data
 
 class Experiment:
 
-    def __init__(self, data, param_set, results_dir="FIXED/w_v_architecture_fully_connected"):
+    def __init__(self, data_id, param_set, results_dir="FIXED/w_v_architecture_fully_connected"):
         results_dir = "experiments/" + results_dir
-        self.data = data
-        self.model_factory = lambda: Model(data.D, **param_set)
+        self.data = Data(param_set['D'])
+        self.data.load(data_id)
+        self.model_factory = lambda: Model(**param_set)
         self.results_dir = results_dir
         self.result_path = f"{self.results_dir}/results.json"
         os.makedirs(self.results_dir, exist_ok=True)
-
+    
     def run(self):
-        tstart = time.perf_counter()
-        x, y = self.data.training_data()
-        testx, testy = self.data.training_data()
-        model = self.model_factory()
-        model.show()
-        _, sparsity_epochs, loss_epochs = model.learn(x, y)
-        pred = model.predict(testx)
-        pred_mse = np.round(np.sum(np.power((pred - testy), 2)) / pred.size, 2)
-        pred_acc = np.round((np.sign(pred) == np.sign(testy)).sum() / pred.size, 2)
-        tend = time.perf_counter()
-        report = {
-            "Eval. MSE": pred_mse,
-            "Eval. Acc": pred_acc,
-            "Sparsity": model.sparsity(),
-            "Sparsity by Epoch": sparsity_epochs,
-            "Training Loss by Epoch": loss_epochs,
-            "Run Time (S)": tend - tstart
-        }
-        return lambda: self.save(self.data, model, report)
+        pass
 
-    def save(self, data, model, report):
+    def save(self, model, report):
         out = {
             'data': self.data.describe(),
             'model': model.describe(),
             'report': report
         }
-        out_c = out.copy()
-        plt.close('all')
-        if self.data.D == 1:
-            out['interpolation_sparsity_path'] = self.graph_1d_interpolation(data, model, out_c)
-        elif self.data.D == 2:
-            out['interpolation_sparsity_path'] = self.graph_2d_interpolation(data, model, out_c)
-        else:
-            out['interpolation_sparsity_path'] = self.graph_Nd_learned_sparsity(data, model, out_c)
-        out['sparsity_by_epoch_path'] = self.graph_sparsity_by_epoch(data, model, out_c)
+        # out_c = out.copy()
+        # plt.close('all')
+        # if self.data.D == 1:
+        #     out['interpolation_sparsity_path'] = self.graph_1d_interpolation(model, out_c)
+        # elif self.data.D == 2:
+        #     out['interpolation_sparsity_path'] = self.graph_2d_interpolation(model, out_c)
+        # else:
+        #     out['interpolation_sparsity_path'] = self.graph_Nd_learned_sparsity(model, out_c)
+        # out['sparsity_by_epoch_path'] = self.graph_sparsity_by_epoch(model, out_c)
         out['state_dict_path'] = self.save_state_dict(model)
         out['matlab_path'] = self.save_state_dict_matlab(model)
         if not os.path.exists(self.result_path):
@@ -95,12 +76,12 @@ class Experiment:
                 t += f"-{k}: {v}\n" 
         return t
 
-    def graph_1d_interpolation(self, data, model, out):
+    def graph_1d_interpolation(self, model, out):
         x = np.linspace(-1, 1, 1000).reshape(-1,1)
         y = model.predict(x).flatten()
         fig, ax = plt.subplots(figsize=(6,8), nrows=2, ncols=1)
         cbar = ax[0].scatter(x, y, c=y, cmap="bwr")
-        trainx, trainy = data.training_data()
+        trainx, trainy = self.data.training_data()
         ax[0].scatter(trainx, trainy, c='black', marker='*')
         fig.colorbar(cbar, ax=ax[0])
         ax[0].set_title("1D Model Interpolation", fontsize=14)
@@ -121,7 +102,7 @@ class Experiment:
         fig.savefig(fname, bbox_inches="tight", facecolor="w")
         return fname
 
-    def graph_2d_interpolation(self, data, model, out):
+    def graph_2d_interpolation(self, model, out):
         n = 100
         x = np.linspace(-1, 1, n)
         x, y = np.meshgrid(x, x)
@@ -140,7 +121,7 @@ class Experiment:
         ax2.set_xticks(barx)
         ax2.set_xticklabels(barx)
         cbar = ax.plot_surface(x, y, z, cmap="bwr", linewidth=0, antialiased=False)
-        trainx, trainy = data.training_data()
+        trainx, trainy = self.data.training_data()
         ax.scatter3D(trainx[:,0], trainx[:,1], trainy, c="black", marker="*")
         fig.colorbar(cbar, ax=ax, shrink=0.5, aspect=5)
         ax.set_title("2D Model Interpolation", fontsize=14)
@@ -156,9 +137,9 @@ class Experiment:
         fig.savefig(fname, bbox_inches="tight", facecolor="w")
         return fname
 
-    def graph_Nd_learned_sparsity(self, data, model, out):
+    def graph_Nd_learned_sparsity(self, model, out):
         fig, ax = plt.subplots(figsize=(5, 5))
-        ax.set_title(f"{data.D}-D Model Sparsity", fontsize=14)
+        ax.set_title(f"{self.data.D}-D Model Sparsity", fontsize=14)
         ax.set_ylim(0,1)
         barx = np.arange(len(out['report']['Sparsity']))
         ax.bar(barx, out['report']['Sparsity'])
@@ -175,9 +156,9 @@ class Experiment:
         fig.savefig(fname, bbox_inches="tight", facecolor="w")
         return fname
 
-    def graph_sparsity_by_epoch(self, data, model, out):
+    def graph_sparsity_by_epoch(self, model, out):
         fig, ax = plt.subplots(figsize=(5, 5))
-        ax.set_title(f"{data.D}-D Average Sparsity by Training Epoch", fontsize=14)
+        ax.set_title(f"{self.data.D}-D Average Sparsity by Training Epoch", fontsize=14)
         ax.set_ylim(0,1)
         epochs = []
         avgs = []
@@ -207,8 +188,8 @@ class Experiment:
     def save_state_dict_matlab(self, model):
         out = {}
         sd = model.state_dict()
-        lookup = ['R', 'C'] if model.deepnet else ['W', 'V', 'C'] 
-        L = model.layers+2 if model.deepnet else model.layers
+        lookup = ['R', 'C'] if model.block_architecture else ['W', 'V', 'C'] 
+        L = model.layers+2 if model.block_architecture else model.layers
         for i in range(L):
             key = 'blocks.{}.{}.weight'
             for l in lookup:
@@ -225,7 +206,8 @@ class Experiment:
         fname += f"_LR={model.learning_rate}_WD={model.weight_decay}"
         fname += f"_Term={model.regularization_method}_Layers={model.layers}"
         fname += f"_Lam={model.regularization_lambda}_E={model.epochs}"
-        fname += f"__BlockArch={model.deepnet}"
+        fname += f"_DataID={self.data.data_id}"
+        fname += f"_BlockArch={model.block_architecture}"
         fname += ext
         return fname
 
@@ -242,40 +224,3 @@ class ResultsViewer:
 
     def __len__(self):
         return len(self.contents)
-
-if __name__ == '__main__':
-    from data import Data
-    from itertools import product
-    from dask_manager import Manager
-    import sys
-
-    manager = Manager(int(sys.argv[1]))
-
-    data = Data(4)
-    data.save(override=False)
-    data.load()
-
-    epochs = [50000]
-    relu_widths = [data.D*data.D*data.n]
-    linear_widths = [data.D*data.D*data.n]
-    layers = [2] 
-    lambdas = [0.1, 0.001]
-    terms = ['standard_wd', 'term2',  'none']
-    deep = [False]
-
-    pool = []
-    mid = 0
-    for rw, lw, lay, e, lam, term, dp in product(relu_widths, linear_widths, \
-                                            layers, epochs, lambdas, terms, deep):
-        params = {"relu_width": rw, "linear_width": lw, 
-        "layers": lay, "epochs": e, "learning_rate": 1e-3,
-        "regularization_lambda": lam, "regularization_method": term,
-        "weight_decay": lam, "modelid": mid, "deepnet": dp}
-        print(params)
-        exp = Experiment(data, params)
-        pool.append(exp.run)
-        mid += 1
- 
-    savefns = manager.distributed_run(pool)
-    for fn in savefns:
-        print(fn())
