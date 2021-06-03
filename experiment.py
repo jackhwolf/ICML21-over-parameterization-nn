@@ -13,7 +13,7 @@ import time
 
 class Experiment:
 
-    def __init__(self, data, param_set, results_dir="FIXED/w_v_architecture_low_rank"):
+    def __init__(self, data, param_set, results_dir="FIXED/w_v_architecture_fully_connected"):
         results_dir = "experiments/" + results_dir
         self.data = data
         self.model_factory = lambda: Model(data.D, **param_set)
@@ -257,7 +257,7 @@ if __name__ == '__main__':
 
     epochs = [50000]
     relu_widths = [data.D*data.D*data.n]
-    linear_widths = [data.D*data.D]  # *data.n]
+    linear_widths = [data.D*data.D*data.n]
     layers = [2] 
     lambdas = [0.001, 0.1]
     terms = ['standard_wd', 'term2']
@@ -275,15 +275,7 @@ if __name__ == '__main__':
         exp = Experiment(data, params)
         pool.append(exp.run)
         mid += 1
-
-    params_no_reg = {
-        "relu_width": rw, "linear_width": lw, 
-        "layers": lay, "epochs": e, "learning_rate": 1e-3,
-        "regularization_lambda": lam, "regularization_method": 'none',
-        "modelid": mid, "deepnet": deep
-    }
-    pool.append(Experiment(data, params_no_reg).run)
-
+ 
     savefns = manager.distributed_run(pool)
     for fn in savefns:
         print(fn())
