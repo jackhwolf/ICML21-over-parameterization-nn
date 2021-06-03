@@ -259,18 +259,18 @@ if __name__ == '__main__':
     relu_widths = [data.D*data.D*data.n]
     linear_widths = [data.D*data.D*data.n]
     layers = [2] 
-    lambdas = [0.001, 0.1]
-    terms = ['standard_wd', 'term2']
-    deep = False
+    lambdas = [0.1, 0.001]
+    terms = ['standard_wd', 'term2',  'none']
+    deep = [False]
 
     pool = []
     mid = 0
-    for rw, lw, lay, e, lam, term in product(relu_widths, linear_widths, \
-                                            layers, epochs, lambdas, terms):
+    for rw, lw, lay, e, lam, term, dp in product(relu_widths, linear_widths, \
+                                            layers, epochs, lambdas, terms, deep):
         params = {"relu_width": rw, "linear_width": lw, 
         "layers": lay, "epochs": e, "learning_rate": 1e-3,
         "regularization_lambda": lam, "regularization_method": term,
-        "weight_decay": lam, "modelid": mid, "deepnet": deep}
+        "weight_decay": lam, "modelid": mid, "deepnet": dp}
         print(params)
         exp = Experiment(data, params)
         pool.append(exp.run)
