@@ -5,6 +5,7 @@ from dask.distributed import Scheduler, Worker, Client
 from contextlib import AsyncExitStack
 import yaml
 from sklearn.model_selection import ParameterGrid
+import time
 
 class TmuxDeployer:
 
@@ -33,14 +34,14 @@ class DaskManager:
             client = Client("localhost:8859", asynchronous=True)
             files = ["data.py", "model.py", "deploy.py", "experiment.py", "sparsity_experiment.py"]
             for f in files:
-                await client.upload_file(f)
+                client.upload_file(f)
+            time.sleep(3)
             futures = []
             for i in range(len(fnpool)):
                 futures.append(client.submit(fnpool[i]))
             result = await client.gather(futures)
             return result  # savefn for each experiment so dask doesnt write over
         return asyncio.get_event_loop().run_until_complete(f())
-
 
 class YamlInput:
 
