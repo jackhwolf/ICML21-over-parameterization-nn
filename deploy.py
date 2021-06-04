@@ -13,7 +13,7 @@ class TmuxDeployer:
         self.sname = session_name
         self.session = libtmux.Server().new_session(self.sname, kill_session=True)
 
-    def __call__(self, experiment_fname, workers, input_fname):
+    def __call__(self, experiment_fname, workers, input_fname, addr):
         experiment_fname = os.path.abspath(experiment_fname)
         pane = self.session.attached_window.attached_pane
         pane.send_keys('source venv/bin/activate')
@@ -21,7 +21,7 @@ class TmuxDeployer:
                 'VECLIB_MAXIMUM_THREADS', 'OPENBLAS_NUM_THREADS']
         for key in keys:
             pane.send_keys(f'export {key}=1')
-        cmd = f"python3 {experiment_fname} {workers} {input_fname}"
+        cmd = f"python3 {experiment_fname} {workers} {input_fname} {addr}"
         pane.send_keys(cmd)
         
 class DaskManager:
@@ -29,9 +29,9 @@ class DaskManager:
     def __init__(self, workers):
         self.workers = workers
 
-    def distributed_run(self, fnpool):
+    def distributed_run(self, fnpool, addr):
         async def f():
-            client = await Client("localhost:8859", asynchronous=True)
+            client = await Client(addr, asynchronous=True)
             files = ["data.py", "model.py", "deploy.py", "experiment.py", "sparsity_experiment.py"]
             for f in files:
                 await client.upload_file(f)
@@ -39,8 +39,9 @@ class DaskManager:
             futures = []
             for i in range(len(fnpool)):
                 futures.append(client.submit(fnpool[i]))
-            result = await client.gather(futures)
-            return result  # savefn for each experiment so dask doesnt write over
+            return futures
+            # result = await client.gather(futures)
+            # return result  # savefn for each experiment so dask doesnt write over
         return asyncio.get_event_loop().run_until_complete(f())
 
 class YamlInput:
@@ -68,7 +69,6 @@ class YamlInput:
                 if g['regularization_method'] == 'none':
                     no_reg_done = True
 
-
     def __getitem__(self, k):
         return self.c[k]    
 
@@ -76,6 +76,6 @@ class YamlInput:
 if __name__ == '__main__':
     import sys
     d = TmuxDeployer()
-    d(sys.argv[1], sys.argv[2], sys.argv[3])
+    d(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
 
         

@@ -128,6 +128,7 @@ class Model(torch.nn.Module):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
         sparsity_epochs = []
         loss_epochs = []
+        foo = 1 / 0
         for e in range(self.epochs):
             pred = self.forward(x)
             loss = criterion(pred, y)
@@ -136,8 +137,6 @@ class Model(torch.nn.Module):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            for p in self.parameters():
-                p.grad = None
             current_sparsity = self.sparsity().tolist()
             if e % 200 == 0:
                 print(f"ID: {self.modelid}, E: {e}, LOSS: {loss}")

@@ -26,12 +26,13 @@ class SparsityExperiment(Experiment):
         }
         return lambda: self.save(model, report)
 
-
 if __name__ == '__main__':
     from data import Data
     from itertools import product
     from deploy import DaskManager, YamlInput
     import sys
+    from distributed import as_completed
+    import traceback
 
     manager = DaskManager(int(sys.argv[1]))
     yamlinput = YamlInput(sys.argv[2])
@@ -42,8 +43,19 @@ if __name__ == '__main__':
         exp = SparsityExperiment(data_id, params, results_dir)
         pool.append(exp.run)
     
-    savefns = manager.distributed_run(pool)
-    for fn in savefns:
-        print(fn())
+    # savefns = manager.distributed_run(pool, sys.argv[3])
+    # for fn in savefns:
+    #     print(fn())
+
+    futures = manager.distributed_run(pool, sys.argv[3])
+    for future in as_completed(futures):
+        try:
+            savefn = future.result()
+            print(savefn())
+        except Exception as e:
+            print(e)
+            print(traceback.format_exc())
+            print("==========================")
+
 
 
