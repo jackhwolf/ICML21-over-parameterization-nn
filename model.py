@@ -136,6 +136,8 @@ class Model(torch.nn.Module):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            for p in self.parameters():
+                p.grad = None
             current_sparsity = self.sparsity().tolist()
             if e % 200 == 0:
                 print(f"ID: {self.modelid}, E: {e}, LOSS: {loss}")
