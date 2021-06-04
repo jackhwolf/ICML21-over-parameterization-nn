@@ -40,7 +40,7 @@ if __name__ == '__main__':
     pool = []
     
     for i, data_id, params in enumerate(yamlinput.iterate_inputs()):
-        params['model_id'] = i
+        params['modelid'] = i
         exp = SparsityExperiment(data_id, params, results_dir)
         pool.append(exp.run)
     
