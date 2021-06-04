@@ -30,19 +30,17 @@ class DaskManager:
         self.workers = workers
 
     def distributed_run(self, fnpool, addr):
-        async def f():
-            client = await Client(addr, asynchronous=True)
-            files = ["data.py", "model.py", "deploy.py", "experiment.py", "sparsity_experiment.py"]
-            for f in files:
-                await client.upload_file(f)
-            # time.sleep(3)
-            futures = []
-            for i in range(len(fnpool)):
-                futures.append(client.submit(fnpool[i]))
-            return futures
-            # result = await client.gather(futures)
-            # return result  # savefn for each experiment so dask doesnt write over
-        return asyncio.get_event_loop().run_until_complete(f())
+        client = Client(addr, asynchronous=False)
+        files = ["data.py", "model.py", "deploy.py", "experiment.py", "sparsity_experiment.py"]
+        for f in files:
+            client.upload_file(f)
+        # time.sleep(3)
+        futures = []
+        for i in range(len(fnpool)):
+            futures.append(client.submit(fnpool[i]))
+        return futures
+        # result = await client.gather(futures)
+        # return result  # savefn for each experiment so dask doesnt write over
 
 class YamlInput:
 
