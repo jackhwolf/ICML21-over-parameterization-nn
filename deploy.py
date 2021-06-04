@@ -44,6 +44,7 @@ class DaskManager:
                     return result  # savefn for each experiment so dask doesnt write over
         return asyncio.get_event_loop().run_until_complete(f())
 
+
 class YamlInput:
 
     def __init__(self, fname):
