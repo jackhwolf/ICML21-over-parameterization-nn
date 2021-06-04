@@ -6,7 +6,6 @@ from contextlib import AsyncExitStack
 from numpy import isin
 import yaml
 from sklearn.model_selection import ParameterGrid
-from itertools import product
 
 class TmuxDeployer:
 
@@ -32,17 +31,17 @@ class DaskManager:
 
     def distributed_run(self, fnpool):
         async def f():
+            client = Client("localhost:8859", asynchronous=True)
             async with Scheduler() as sched:
                 async with AsyncExitStack() as stack:
                     ws = []
                     for i in range(self.workers):
                         ws.append(await stack.enter_async_context(Worker(sched.address)))
-                    async with Client(sched.address, asynchronous=True) as client:
-                        futures = []
-                        for i in range(len(fnpool)):
-                            futures.append(client.submit(fnpool[i]))
-                        result = await client.gather(futures)
-                        return result  # savefn for each experiment so dask doesnt write over
+                    futures = []
+                    for i in range(len(fnpool)):
+                        futures.append(client.submit(fnpool[i]))
+                    result = await client.gather(futures)
+                    return result  # savefn for each experiment so dask doesnt write over
         return asyncio.get_event_loop().run_until_complete(f())
 
 class YamlInput:

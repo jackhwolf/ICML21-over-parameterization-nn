@@ -193,7 +193,7 @@ class Experiment:
         for i in range(L):
             key = 'blocks.{}.{}.weight'
             for l in lookup:
-                if i == L-1 and l == 'C':
+                if model.block_architecture and i != L-1 and l == 'C':
                     continue
                 out[f'{l}_{i}'] = sd[key.format(i, l)].numpy()
         fname = self.descriptive_filename(model, ".mat")
