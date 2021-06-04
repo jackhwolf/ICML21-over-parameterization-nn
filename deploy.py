@@ -3,7 +3,6 @@ import libtmux
 import asyncio
 from dask.distributed import Scheduler, Worker, Client
 from contextlib import AsyncExitStack
-from numpy import isin
 import yaml
 from sklearn.model_selection import ParameterGrid
 
@@ -32,16 +31,18 @@ class DaskManager:
     def distributed_run(self, fnpool):
         async def f():
             client = Client("localhost:8859", asynchronous=True)
-            async with Scheduler() as sched:
-                async with AsyncExitStack() as stack:
-                    ws = []
-                    for i in range(self.workers):
-                        ws.append(await stack.enter_async_context(Worker(sched.address)))
-                    futures = []
-                    for i in range(len(fnpool)):
-                        futures.append(client.submit(fnpool[i]))
-                    result = await client.gather(futures)
-                    return result  # savefn for each experiment so dask doesnt write over
+            files = ["data.py", "model.py", "deploy.py", "experiment.py", "sparsity_experiment.py"]
+            for f in files:
+                client.upload_file(f)
+            async with AsyncExitStack() as stack:
+                ws = []
+                for i in range(self.workers):
+                    ws.append(await stack.enter_async_context(Worker("localhost:8859")))
+                futures = []
+                for i in range(len(fnpool)):
+                    futures.append(client.submit(fnpool[i]))
+                result = await client.gather(futures)
+                return result  # savefn for each experiment so dask doesnt write over
         return asyncio.get_event_loop().run_until_complete(f())
 
 
