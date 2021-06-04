@@ -31,11 +31,11 @@ class DaskManager:
 
     def distributed_run(self, fnpool):
         async def f():
-            client = Client("localhost:8859", asynchronous=True)
+            client = await Client("localhost:8859", asynchronous=True)
             files = ["data.py", "model.py", "deploy.py", "experiment.py", "sparsity_experiment.py"]
             for f in files:
                 await client.upload_file(f)
-            time.sleep(3)
+            # time.sleep(3)
             futures = []
             for i in range(len(fnpool)):
                 futures.append(client.submit(fnpool[i]))
