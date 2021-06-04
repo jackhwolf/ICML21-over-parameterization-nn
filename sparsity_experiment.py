@@ -43,10 +43,6 @@ if __name__ == '__main__':
         exp = SparsityExperiment(data_id, params, results_dir)
         pool.append(exp.run)
     
-    # savefns = manager.distributed_run(pool, sys.argv[3])
-    # for fn in savefns:
-    #     print(fn())
-
     futures = manager.distributed_run(pool, sys.argv[3])
     for future in as_completed(futures):
         try:
