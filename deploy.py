@@ -34,7 +34,7 @@ class DaskManager:
             client = Client("localhost:8859", asynchronous=True)
             files = ["data.py", "model.py", "deploy.py", "experiment.py", "sparsity_experiment.py"]
             for f in files:
-                client.upload_file(f)
+                await client.upload_file(f)
             time.sleep(3)
             futures = []
             for i in range(len(fnpool)):
