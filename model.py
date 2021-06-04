@@ -30,9 +30,9 @@ class ReLULinearSkipBlock(torch.nn.Module):
     
     def state_dict_matlab(self, i=0):
         out = {
-            f"W_{i}": self.W.weight.detach(),
-            f"V_{i}": self.V.weight.detach(),
-            f"C_{i}": self.C.weight.detach(),
+            f"W_{i}": self.W.weight.detach().numpy(),
+            f"V_{i}": self.V.weight.detach().numpy(),
+            f"C_{i}": self.C.weight.detach().numpy(),
         }
         return out
     
@@ -62,9 +62,9 @@ class DeepBlock(torch.nn.Module):
             return [self.R.weight, self.C.weight]
         
     def state_dict_matlab(self, i=0):
-        out = {f"R_{i}": self.R.weight.detach()}
+        out = {f"R_{i}": self.R.weight.detach().numpy()}
         if self.relu_out != 1:
-            out[f"C_{i}"] = self.C.weight.detach()
+            out[f"C_{i}"] = self.C.weight.detach().numpy()
         return out
 
 class Model(torch.nn.Module):
@@ -162,6 +162,22 @@ class Model(torch.nn.Module):
             r += self.blocks[i].C.weight.abs().sum()
             r += self.blocks[i].C.bias.abs().sum()
         return r
+    
+    def l2_norm(self):
+        r = 0
+        for param in self.parameters():
+            if not param.requires_grad:
+                continue
+            r += param.data.pow(2).sum()
+        return r
+    
+    def regularization_value_metric(self):
+        if self.regularization_method == 'term2':
+            return self.regularize_term2()
+        elif self.regularization_method == 'standard_wd':
+            return self.l2_norm()
+        else:
+            return torch.tensor(0)
 
     def sparsity(self):
         def sperc(x):

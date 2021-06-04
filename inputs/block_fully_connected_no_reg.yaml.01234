@@ -1,0 +1,12 @@
+results_dir: FIXED/Jun4-fc/block_fully_connected_no_reg_01234
+data_id: [0, 1, 2, 3, 4]
+parameters:
+  D: 4
+  relu_width: 1296
+  linear_width: 1296
+  layers: 2
+  epochs: 50000
+  learning_rate: 1e-3
+  regularization_lambda: [0]
+  regularization_method: [none]
+  block_architecture: True
