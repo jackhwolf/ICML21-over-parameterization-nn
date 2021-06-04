@@ -1,0 +1,12 @@
+results_dir: FIXED/block_fully_connected_regularized_67
+data_id: [6, 7]
+parameters:
+  D: 4
+  relu_width: 1296
+  linear_width: 1296
+  layers: 2
+  epochs: 50000
+  learning_rate: 1e-3
+  regularization_lambda: [1e-1, 1e-3, 1e-5, 1e-7]
+  regularization_method: [standard_wd]
+  block_architecture: True
