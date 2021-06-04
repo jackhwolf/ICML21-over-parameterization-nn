@@ -39,7 +39,8 @@ if __name__ == '__main__':
     results_dir = yamlinput['results_dir']
     pool = []
     
-    for data_id, params in yamlinput.iterate_inputs():
+    for i, data_id, params in enumerate(yamlinput.iterate_inputs()):
+        params['model_id'] = i
         exp = SparsityExperiment(data_id, params, results_dir)
         pool.append(exp.run)
     
