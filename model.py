@@ -27,7 +27,15 @@ class ReLULinearSkipBlock(torch.nn.Module):
 
     def weights(self):
         return [self.W.weight, self.V.weight]
-
+    
+    def state_dict_matlab(self, i=0):
+        out = {
+            f"W_{i}": self.W.weight.detach(),
+            f"V_{i}": self.V.weight.detach(),
+            f"C_{i}": self.C.weight.detach(),
+        }
+        return out
+    
 class DeepBlock(torch.nn.Module):
 
     def __init__(self, relu_in, relu_out):
@@ -48,7 +56,16 @@ class DeepBlock(torch.nn.Module):
         return out
 
     def weights(self):
-        return [self.R.weight]
+        if self.relu_out == 1:
+            return [self.R.weight]
+        else:
+            return [self.R.weight, self.C.weight]
+        
+    def state_dict_matlab(self, i=0):
+        out = {f"R_{i}": self.R.weight.detach()}
+        if self.relu_out != 1:
+            out[f"C_{i}"] = self.C.weight.detach()
+        return out
 
 class Model(torch.nn.Module):
     ''' model is a sequence of ReLULinearSkipBlocks '''
@@ -56,7 +73,7 @@ class Model(torch.nn.Module):
     def __init__(self, D=2, relu_width=320, linear_width=160, layers=1, 
                         epochs=10, learning_rate=1e-3,
                         regularization_lambda=0.1, regularization_method=1,
-                        block_architecture=False, modelid=0):
+                        block_architecture=False, modelid=0, weight_decay=0):
         super().__init__()
         self.D = int(D)
         self.relu_width = int(relu_width)
@@ -175,5 +192,12 @@ class Model(torch.nn.Module):
         for b in self.blocks:
             print(b)
         print("============================")
+        
+    def state_dict_matlab(self):
+        out = {}
+        for i in range(len(self.blocks)):
+            mat = self.blocks[i].state_dict_matlab(i)
+            out.update(mat)
+        return out
 
     

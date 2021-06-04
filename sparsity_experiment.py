@@ -17,12 +17,10 @@ class SparsityExperiment(Experiment):
         model.show()
         _, sparsity_epochs, loss_epochs = model.learn(x, y)
         pred = model.predict(testx)
-        pred_mse = np.round(np.sum(np.power((pred - testy), 2)) / pred.size, 2)
-        pred_acc = np.round((np.sign(pred) == np.sign(testy)).sum() / pred.size, 2)
+        pred_mse = np.sum(np.power((pred - testy), 2)) / pred.size
         tend = time.perf_counter()
         report = {
             "Eval. MSE": pred_mse,
-            "Eval. Acc": pred_acc,
             "Sparsity": model.sparsity(),
             "Sparsity by Epoch": sparsity_epochs,
             "Training Loss by Epoch": loss_epochs,

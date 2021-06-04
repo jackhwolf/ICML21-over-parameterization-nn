@@ -186,18 +186,8 @@ class Experiment:
         return fname
 
     def save_state_dict_matlab(self, model):
-        out = {}
-        sd = model.state_dict()
-        lookup = ['R', 'C'] if model.block_architecture else ['W', 'V', 'C'] 
-        L = model.layers+2 if model.block_architecture else model.layers
-        for i in range(L):
-            key = 'blocks.{}.{}.weight'
-            for l in lookup:
-                if i == L-1 and l == 'C':
-                    continue
-                out[f'{l}_{i}'] = sd[key.format(i, l)].numpy()
         fname = self.descriptive_filename(model, ".mat")
-        savemat(fname, out)
+        savemat(fname, model.state_dict_matlab())
         return fname
     
     def descriptive_filename(self, model, ext):
