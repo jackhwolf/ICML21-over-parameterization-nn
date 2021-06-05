@@ -18,6 +18,9 @@ class ReLULinearSkipBlock(torch.nn.Module):
         self.W = torch.nn.Linear(self.D, self.relu_width)
         self.V = torch.nn.Linear(self.relu_width, self.linear_width)
         self.C = torch.nn.Linear(self.D, self.linear_width)
+        torch.nn.init.uniform_(self.W.weight)
+        torch.nn.init.uniform_(self.V.weight)
+        torch.nn.init.uniform_(self.C.weight)
 
     def forward(self, x):
         out1 = self.W(x).clamp(min=0)
@@ -43,10 +46,12 @@ class DeepBlock(torch.nn.Module):
         self.relu_in = int(relu_in)
         self.relu_out = int(relu_out)
         self.R = torch.nn.Linear(self.relu_in, self.relu_out)
+        torch.nn.init.uniform_(self.R.weight)
         if self.relu_out == 1:
             self.C = None
         else:
             self.C = torch.nn.Linear(self.relu_in, self.relu_out)
+            torch.nn.init.uniform_(self.C.weight)
 
     def forward(self, x):
         if self.relu_out == 1:
@@ -95,6 +100,9 @@ class Model(torch.nn.Module):
             self.regularization_lambda = 0
         self.modelid = int(modelid)
         self.blocks = torch.nn.Sequential(*self.build_blocks())
+
+    def init_weights(self, foo):
+        torch.nn.init.uniform_(foo.weight, -1, 1)
 
     def describe(self):
         out = {'relu_width': self.relu_width, 'linear_width': self.linear_width}
