@@ -34,13 +34,10 @@ class DaskManager:
         files = ["data.py", "model.py", "deploy.py", "experiment.py", "sparsity_experiment.py"]
         for f in files:
             client.upload_file(f)
-        # time.sleep(3)
         futures = []
         for i in range(len(fnpool)):
             futures.append(client.submit(fnpool[i]))
         return futures
-        # result = await client.gather(futures)
-        # return result  # savefn for each experiment so dask doesnt write over
 
 class YamlInput:
 
