@@ -182,7 +182,8 @@ class Model(torch.nn.Module):
     def sparsity(self):
         def sperc(x):
             x = x.abs()
-            threshold = 1e-3*x.max()
+            # threshold = 1e-3*x.max()
+            threshold = 10e-3
             perc = (x > threshold).sum() / x.numel()
             return perc.numpy().item() 
         sparsity = []

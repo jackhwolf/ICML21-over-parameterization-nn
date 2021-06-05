@@ -1,5 +1,5 @@
-results_dir: FIXED/Jun5/w_v_low_rank_regularized_dataset_89
-data_id: [8, 9]
+results_dir: FIXED/Jun5/w_v_low_rank_regularized_dataset_0
+data_id: [0]
 parameters:
   D: 4
   relu_width: 1296
